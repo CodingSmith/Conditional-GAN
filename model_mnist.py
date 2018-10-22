@@ -28,8 +28,8 @@ class CGAN(object):
 
     def build_model(self):
 
-        self.fake_images = self.gern_net(self.z, self.y)
-        G_image = tf.summary.image("G_out", self.fake_images)
+        self.fake_images = self.gen_net(self.z, self.y)
+        G_image = tf.summary.image("G_out", self.fake_images, max_outputs=8)
         ##the loss of gerenate network
         D_pro, D_logits = self.dis_net(self.images, self.y, False)
         D_pro_sum = tf.summary.histogram("D_pro", D_pro)
@@ -75,7 +75,7 @@ class CGAN(object):
             summary_writer = tf.summary.FileWriter(self.log_dir, graph=sess.graph)
 
             step = 0
-            while step <= 10000:
+            while step <= 50000:
 
                 realbatch_array, real_labels = self.data_ob.getNext_batch(step)
 
@@ -100,8 +100,8 @@ class CGAN(object):
                 if np.mod(step, 50) == 1 and step != 0:
 
                     sample_images = sess.run(self.fake_images, feed_dict={self.z: batch_z, self.y: sample_label()})
-                    save_images(sample_images, [8, 8],
-                                './{}/train_{:04d}.png'.format(self.sample_dir, step))
+                #    save_images(sample_images, [8, 8],
+                #                './{}/train_{:04d}.png'.format(self.sample_dir, step))
 
                     self.saver.save(sess, self.model_path)
 
@@ -154,7 +154,7 @@ class CGAN(object):
 
             print("the visualization finish!")
 
-    def gern_net(self, z, y):
+    def gen_net(self, z, y):
 
         with tf.variable_scope('generator') as scope:
 

@@ -2,16 +2,17 @@ from model_mnist import CGAN
 import tensorflow as tf
 from utils import Mnist
 import os
+import datetime
 
 flags = tf.app.flags
-
+logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
 flags.DEFINE_string("sample_dir" , "samples_for_test" , "the dir of sample images")
 flags.DEFINE_integer("output_size", 28 , "the size of generate image")
 flags.DEFINE_float("learn_rate", 0.0002, "the learning rate for gan")
 flags.DEFINE_integer("batch_size", 64, "the batch number")
 flags.DEFINE_integer("z_dim", 100, "the dimension of noise z")
 flags.DEFINE_integer("y_dim", 10, "the dimension of condition y")
-flags.DEFINE_string("log_dir" , "/tmp/tensorflow_mnist" , "the path of tensorflow's log")
+flags.DEFINE_string("log_dir" , logdir , "the path of tensorflow's log")
 flags.DEFINE_string("model_path" , "model/model.ckpt" , "the path of model")
 flags.DEFINE_string("visua_path" , "visualization" , "the path of visuzation images")
 flags.DEFINE_integer("op" , 0, "0: train ; 1:test ; 2:visualize")
