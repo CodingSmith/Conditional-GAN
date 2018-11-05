@@ -1,6 +1,6 @@
 from utils import save_images, vis_square,sample_label
-from tensorflow.contrib.layers.python.layers import xavier_initializer
 import cv2
+from tensorflow.contrib.layers.python.layers import xavier_initializer
 from ops import conv2d, lrelu, de_conv, fully_connect, conv_cond_concat, batch_normal
 import tensorflow as tf
 import numpy as np
@@ -28,27 +28,24 @@ class CGAN(object):
 
     def build_model(self):
 
-        self.fake_images = self.gen_net(self.z, self.y)
-        G_image = tf.summary.image("G_out", self.fake_images, max_outputs=8)
+        self.fake_images = self.gen_net(self.z, self.y)  #Generate fake images
+        G_image = tf.summary.image("G_out", self.fake_images)  #Add generated fake image samples to tensorboard
         ##the loss of gerenate network
-        D_pro, D_logits = self.dis_net(self.images, self.y, False)
-        D_pro_sum = tf.summary.histogram("D_pro", D_pro)
+        D_pro, D_logits = self.dis_net(self.images, self.y, False) #Calculate the loss of the Discrimator by inputting the real image
+        D_pro_sum = tf.summary.histogram("D_pro", D_pro) 
 
-        G_pro, G_logits = self.dis_net(self.fake_images, self.y, True)
+        G_pro, G_logits = self.dis_net(self.fake_images, self.y, True) #Calculate the loss of the Discrimator by inputting the real image
         G_pro_sum = tf.summary.histogram("G_pro", G_pro)
 
-        D_fake_loss = tf.reduce_mean(
-            tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(G_pro), logits=G_logits))
+        D_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(G_pro), logits=G_logits)) #Calculate the overall loss of the Discrimator by feeding fake images
+        D_real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(D_pro), logits=D_logits))  #Calculate the overall loss of the Discrimator by feeding real images
+        G_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(G_pro), logits=G_logits))  #Calculate the overall loss of the Generator
 
-        D_real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(D_pro), logits=D_logits))
-        G_fake_loss = tf.reduce_mean(
-            tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(G_pro), logits=G_logits))
+        self.D_loss = D_real_loss + D_fake_loss  #Sum the total loss of the Discrimator and assign it to the Class param
+        self.G_loss = G_fake_loss   #Assign the total loss of the Generator and assigin it to the Class param
 
-        self.D_loss = D_real_loss + D_fake_loss
-        self.G_loss = G_fake_loss
-
-        loss_sum = tf.summary.scalar("D_loss", self.D_loss)
-        G_loss_sum = tf.summary.scalar("G_loss", self.G_loss)
+        loss_sum = tf.summary.scalar("D_loss", self.D_loss)    #Add Discrimator Loss to the tensorboard
+        G_loss_sum = tf.summary.scalar("G_loss", self.G_loss)  #Add Generator Loss to the tensorboard
 
         self.merged_summary_op_d = tf.summary.merge([loss_sum, D_pro_sum])
         self.merged_summary_op_g = tf.summary.merge([G_loss_sum, G_pro_sum, G_image])
@@ -75,7 +72,7 @@ class CGAN(object):
             summary_writer = tf.summary.FileWriter(self.log_dir, graph=sess.graph)
 
             step = 0
-            while step <= 50000:
+            while step <= 100000:
 
                 realbatch_array, real_labels = self.data_ob.getNext_batch(step)
 
@@ -157,10 +154,10 @@ class CGAN(object):
     def gen_net(self, z, y):
 
         with tf.variable_scope('generator') as scope:
-
-            yb = tf.reshape(y, shape=[self.batch_size, 1, 1, self.y_dim])
+ 
+            yb = tf.reshape(y, shape=[self.batch_size, 1, 1, self.y_dim]) #Reshape the input noise(the precondition of the CGAN into a shape 64x1x1x10)
             z = tf.concat([z, y], 1)
-            c1, c2 = int( self.output_size / 4), int(self.output_size / 2 ) 
+            c1, c2 = int( self.output_size / 4), int(self.output_size / 2 )
 
             # 10 stand for the num of labels
             d1 = tf.nn.relu(batch_normal(fully_connect(z, output_size=1024, scope='gen_fully'), scope='gen_bn1'))
